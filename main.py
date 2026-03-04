@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from sqliteModule import *
 import sqlite3
 
-#Dev
+
 app = FastAPI()
 
 
