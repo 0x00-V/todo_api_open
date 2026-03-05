@@ -1,4 +1,4 @@
-import sqlite3, bcrypt
+import sqlite3, bcrypt, datetime
 
 class Database:
     def __init__(self):
@@ -14,6 +14,10 @@ class Database:
         query = "CREATE TABLE IF NOT EXISTS todoitems (todoitemID INTEGER PRIMARY KEY, userID INTEGER, title TEXT NOT NULL, description TEXT, FOREIGN KEY (userID) REFERENCES users(userID) ON DELETE CASCADE )"
         self.cursor.execute(query)
         self.connection.commit()
+        query = "CREATE TABLE IF NOT EXISTS sessions (sessionID INTEGER PRIMARY KEY, userID INTEGER, session TEXT NOT NULL UNIQUE, EmailAddress TEXT NOT NULL, Username TEXT NOT NULL, TimeCreated TIMESTAMP, FOREIGN KEY (userID) REFERENCES users(userID) ON DELETE CASCADE )"
+        self.cursor.execute(query)
+        self.connection.commit()
+
 
     def addTestData(self):
         try:
@@ -21,7 +25,6 @@ class Database:
             self.cursor.execute(query)
             count = self.cursor.fetchone()[0]
             if count == 0:
-                # Only populate if table is empty.
                 query = "INSERT INTO users(EmailAddress, Password, Username, DisplayName) VALUES (?,?,?,?)"
                 self.cursor.execute(query, ("test@user.com", "1234", "@test_user", "Test User",))
                 self.connection.commit()
@@ -33,13 +36,13 @@ class Database:
             return {"Successful": False, "Response": "[SQLITE] Backend Error (Add Test Data)"}
     
     def userLogin(self, email_address, password):
-        query = "SELECT EmailAddress, Password, Username, DisplayName FROM users WHERE EmailAddress = ?"
+        query = "SELECT userId, EmailAddress, Password, Username, DisplayName FROM users WHERE EmailAddress = ?"
         self.cursor.execute(query, (email_address,))
         row = self.cursor.fetchone()
         if row != None:
-            databasePassword = row[1]
+            databasePassword = row[2]
             if bcrypt.checkpw(password.encode('utf-8'), databasePassword):
-                return {"Successful": True, "Response": "Correct Credentials", "EmailAddress": row[0], "Username": row[2], "DisplayName": row[3]}
+                return {"Successful": True, "Response": "Correct Credentials", "UserID": row[0], "EmailAddress": row[1], "Username": row[3]}
             else:
                 return {"Successful": False, "Response": "Incorrect Credentials"}
         else:
@@ -61,3 +64,10 @@ class Database:
         self.cursor.execute(query, (email_address, hashed_password, username, display_name,))
         self.connection.commit()
         return {"Successful": True, "Email": email_address, "Username": username}
+    
+    def createSession(self, user_id, session, email_address, username):
+        # TODO: CHECK IF USER HAS ANY OTHER SESSIONS. IF GREATER THAN 10 SESSIONS, DELETE THE OLDEST SESSION
+        query = "INSERT INTO sessions(userID, session, EmailAddress, Username, TimeCreated) VALUES (?,?,?,?,?)"
+        self.cursor.execute(query, (user_id, session, email_address, username, datetime.datetime.now(),))
+        self.connection.commit()
+        return {"Successful": True, "Response": "Session Created."}

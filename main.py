@@ -49,17 +49,17 @@ def login(user: UserLogin, response: Response):
         if not value or value.strip() == "":
             return {f"Missing Required Field: {field}"}
     # If correct. Response should look like:  {"Successful": True, "Response": "Correct Credentials", "EmailAddress": "email", "Username": "username", "DisplayName": "displayname"}
-    # TODO : CREATE A SESSION COOKIE HERE
     databaseResponse = sqlite3Database.userLogin(user.EmailAddress, user.Password)
 
-    # TODO: ADD LOGIC IF RESPONSE FALSE FIRST!
-
+    if databaseResponse["Successful"] == False:
+        raise HTTPException(status_code=401, detail=databaseResponse["Response"])
     session_id = str(uuid4())
-    sessions[session_id] = {
-    "EmailAddress": databaseResponse["EmailAddress"],
-    "Username": databaseResponse["Username"]}
-    response.set_cookie(key="session_id", value=session_id, httponly=True, max_age=1800, samesite="lax", secure=False)
-    return databaseResponse
+    sessionCreationResponse = sqlite3Database.createSession(databaseResponse["UserID"], session_id, databaseResponse["EmailAddress"], databaseResponse["Username"])
+    if sessionCreationResponse["Successful"] == True:
+        response.set_cookie(key="session_id", value=session_id, httponly=True, max_age=1800, samesite="lax", secure=False)
+        return databaseResponse
+    else:
+        raise HTTPException(status_code=401, detail=sessionCreationResponse["Response"])
 
 @app.get("/me")
 def get_me(user=Depends(getCurrentUser)):
