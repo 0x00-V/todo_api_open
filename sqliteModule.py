@@ -7,6 +7,7 @@ class Database:
         self.connection.row_factory = sqlite3.Row
         self.cursor = self.connection.cursor()
     
+
     def createDatabase(self):
         query = "CREATE TABLE IF NOT EXISTS users (userID INTEGER PRIMARY KEY, EmailAddress TEXT NOT NULL UNIQUE, Password BLOB NOT NULL, Username TEXT NOT NULL UNIQUE, DisplayName TEXT NOT NULL )"
         self.cursor.execute(query)
@@ -35,6 +36,7 @@ class Database:
         except Exception as e :
             return {"Successful": False, "Response": "[SQLITE] Backend Error (Add Test Data)"}
     
+
     def userLogin(self, email_address, password):
         query = "SELECT userId, EmailAddress, Password, Username, DisplayName FROM users WHERE EmailAddress = ?"
         self.cursor.execute(query, (email_address,))
@@ -48,16 +50,17 @@ class Database:
         else:
             return {"Successful": False, "Response": "Incorrect Credentials."}
         
+
     def registerUser(self, email_address, password, username, display_name):
         query = "SELECT emailAddress FROM users WHERE emailAddress = ?"
         self.cursor.execute(query, (email_address,))
-        rows = self.cursor.fetchone()
-        if(rows):
+        row = self.cursor.fetchone()
+        if(row):
             return {"Successful": False, "Response": "Email Taken."}
         query = "SELECT Username FROM users WHERE Username = ?"
         self.cursor.execute(query, (username,))
-        rows = self.cursor.fetchone()
-        if(rows):
+        row = self.cursor.fetchone()
+        if(row):
             return {"Successful": False, "Response": "Username Taken."}
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         query = "INSERT INTO users(EmailAddress, Password, Username, DisplayName) VALUES (?,?,?,?)"
@@ -65,9 +68,26 @@ class Database:
         self.connection.commit()
         return {"Successful": True, "Email": email_address, "Username": username}
     
+
     def createSession(self, user_id, session, email_address, username):
-        # TODO: CHECK IF USER HAS ANY OTHER SESSIONS. IF GREATER THAN 10 SESSIONS, DELETE THE OLDEST SESSION
+        query = "SELECT sessionId, TimeCreated FROM SESSIONS WHERE userId = ? ORDER BY TimeCreated DESC"
+        self.cursor.execute(query, (user_id,))
+        rows = self.cursor.fetchall()
+        if len(rows) >= 10:
+            print(f"Oldest: {rows[0][0]}:{rows[0][1]}")
+            query = "DELETE FROM sessions WHERE sessionId = ? AND userId = ?"
+            self.cursor.execute(query, (rows[0][0], user_id)) 
         query = "INSERT INTO sessions(userID, session, EmailAddress, Username, TimeCreated) VALUES (?,?,?,?,?)"
-        self.cursor.execute(query, (user_id, session, email_address, username, datetime.datetime.now(),))
+        self.cursor.execute(query, (user_id, session, email_address, username, datetime.datetime.now(datetime.timezone.utc),))
         self.connection.commit()
         return {"Successful": True, "Response": "Session Created."}
+    
+    
+    def checkSession(self, session_id):
+        query = "SELECT EmailAddress, Username FROM sessions WHERE session = ?"
+        self.cursor.execute(query, (session_id,))
+        row = self.cursor.fetchone()
+        if(row):
+            return {"Successful": True, "Response": "User session valid.", "EmailAddress": row[0], "Username": row[1]}
+        else:
+            return {"Successful": False, "Response": "User session not valid."}

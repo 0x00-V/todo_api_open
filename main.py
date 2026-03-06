@@ -9,29 +9,32 @@ sqlite3Database.createDatabase()
 
 app = FastAPI()
 
-# TODO: CHANGE IN-MEM SESSIONS INTO DB
-sessions = {}
-
-# TEMP
-def getCurrentUser(session_id: str = Cookie(default=None)):
-    if not session_id or session_id not in sessions:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    return sessions[session_id]
 
 class UserRegister(BaseModel):
     EmailAddress : str
     Password: str
     Username: str
     DisplayName : str
-
 class UserLogin(BaseModel):
     EmailAddress : str
     Password : str
 
 
+def Authorized(session_id: str = Cookie(default=None)):
+    databaseResponse = sqlite3Database.checkSession(session_id)
+    if databaseResponse["Successful"] == False:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return {"EmailAddress": databaseResponse["EmailAddress"], "Username": databaseResponse["Username"]}
+
+def CheckSession(session_id):
+    databaseResponse = sqlite3Database.checkSession(session_id)
+    return databaseResponse["Successful"]
+        
+
 @app.get("/")
 def index(request: Request):
     return {f"Stuck? Try {request.url}docs"}
+
 
 @app.post("/register")
 def register(user: UserRegister):
@@ -43,12 +46,15 @@ def register(user: UserRegister):
 
     return databaseResponse
 
+
 @app.post("/login")
-def login(user: UserLogin, response: Response):
+def login(user: UserLogin, response: Response, session_id: str = Cookie(default=None)):
+    loginCheck = CheckSession(session_id)
+    if loginCheck == True:
+        raise HTTPException(status_code=401, detail="You're already logged in.")
     for field, value in user.model_dump().items():
         if not value or value.strip() == "":
             return {f"Missing Required Field: {field}"}
-    # If correct. Response should look like:  {"Successful": True, "Response": "Correct Credentials", "EmailAddress": "email", "Username": "username", "DisplayName": "displayname"}
     databaseResponse = sqlite3Database.userLogin(user.EmailAddress, user.Password)
 
     if databaseResponse["Successful"] == False:
@@ -61,21 +67,24 @@ def login(user: UserLogin, response: Response):
     else:
         raise HTTPException(status_code=401, detail=sessionCreationResponse["Response"])
 
+
 @app.get("/me")
-def get_me(user=Depends(getCurrentUser)):
+def get_me(user=Depends(Authorized)):
     return {
         "EmailAddress": user["EmailAddress"],
         "Username": user["Username"]
     }
+
 
 # TODO:
 """
 Description: This will be an API for a todolist application.
 
 Requirements:
-Login & Registration
-CRUD Operations on todolist items
-Use SQLite for the database (Will expand to supporting others)
-After implementing these, I will continue to work on the next steps
-
+> Login & Registration [DONE]
+> Implement Database-stored sessions where the user can only have 10 sessions. If they reach 10, delete oldest one. [DONE]
+> TODOLIST CREATE []
+> TODOLIST READ (LIST) []
+> TODOLIST DELETE []
+> TODOLIST UPDATE []
 """
