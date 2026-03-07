@@ -12,7 +12,7 @@ class Database:
         query = "CREATE TABLE IF NOT EXISTS users (userID INTEGER PRIMARY KEY, EmailAddress TEXT NOT NULL UNIQUE, Password BLOB NOT NULL, Username TEXT NOT NULL UNIQUE, DisplayName TEXT NOT NULL )"
         self.cursor.execute(query)
         self.connection.commit()
-        query = "CREATE TABLE IF NOT EXISTS todoitems (todoitemID INTEGER PRIMARY KEY, userID INTEGER, title TEXT NOT NULL, description TEXT, FOREIGN KEY (userID) REFERENCES users(userID) ON DELETE CASCADE )"
+        query = "CREATE TABLE IF NOT EXISTS todoitems (todoitemID INTEGER PRIMARY KEY, completed BOOL DEFAULT 0, userID INTEGER, title TEXT NOT NULL, description TEXT, TimeCreated TIMESTAMP, FOREIGN KEY (userID) REFERENCES users(userID) ON DELETE CASCADE )"
         self.cursor.execute(query)
         self.connection.commit()
         query = "CREATE TABLE IF NOT EXISTS sessions (sessionID INTEGER PRIMARY KEY, userID INTEGER, session TEXT NOT NULL UNIQUE, EmailAddress TEXT NOT NULL, Username TEXT NOT NULL, TimeCreated TIMESTAMP, FOREIGN KEY (userID) REFERENCES users(userID) ON DELETE CASCADE )"
@@ -74,7 +74,6 @@ class Database:
         self.cursor.execute(query, (user_id,))
         rows = self.cursor.fetchall()
         if len(rows) >= 10:
-            print(f"Oldest: {rows[0][0]}:{rows[0][1]}")
             query = "DELETE FROM sessions WHERE sessionId = ? AND userId = ?"
             self.cursor.execute(query, (rows[0][0], user_id)) 
         query = "INSERT INTO sessions(userID, session, EmailAddress, Username, TimeCreated) VALUES (?,?,?,?,?)"
@@ -91,3 +90,27 @@ class Database:
             return {"Successful": True, "Response": "User session valid.", "EmailAddress": row[0], "Username": row[1]}
         else:
             return {"Successful": False, "Response": "User session not valid."}
+        
+    #TODOITEMS: todoitemID, userID, completed, title, description, TimeCreated
+    def todo_listItems(self):
+        query = "SELECT * FROM todoitems WHERE userID = ?"
+        pass
+
+    def todo_createItem(self):
+        query = "INSERT INTO todoitems(userID, title, description, TimeCreated)"        
+        pass
+
+
+    def todo_editItem(self):
+        query = "UPDATE todoitems SET title = ?, description = ? WHERE todoitemID = ? AND userID = ?"
+        pass
+
+
+    def todo_toggleCompletion(self):
+        query = "UPDATE todoitems SET completed = ? WHERE todoitemID = ? AND userID = ?"
+        pass
+
+
+    def todo_deleteItem(self):
+        query = "DELETE FROM todoitems WHERE todoitemID = ? AND userID = ?"
+        pass
