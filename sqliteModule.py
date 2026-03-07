@@ -83,11 +83,11 @@ class Database:
     
     
     def checkSession(self, session_id):
-        query = "SELECT EmailAddress, Username FROM sessions WHERE session = ?"
+        query = "SELECT userID, EmailAddress, Username FROM sessions WHERE session = ?"
         self.cursor.execute(query, (session_id,))
         row = self.cursor.fetchone()
         if(row):
-            return {"Successful": True, "Response": "User session valid.", "EmailAddress": row[0], "Username": row[1]}
+            return {"Successful": True, "Response": "User session valid.", "UserID": row[0],"EmailAddress": row[1], "Username": row[2]}
         else:
             return {"Successful": False, "Response": "User session not valid."}
         
@@ -96,19 +96,31 @@ class Database:
         query = "SELECT * FROM todoitems WHERE userID = ?"
         pass
 
-    def todo_createItem(self):
-        query = "INSERT INTO todoitems(userID, title, description, TimeCreated)"        
-        pass
+    def todo_createItem(self, user_id, title, description):
+        query = "INSERT INTO todoitems(userID, title, description, TimeCreated) VALUES (?, ?, ?, ?)"
+        self.cursor.execute(query, (user_id, title, description, datetime.datetime.now(datetime.timezone.utc),))
+        self.connection.commit()       
+        return {"Successful": True, "Response": "Item Created."}
 
 
-    def todo_editItem(self):
+    def todo_editItem(self, todoitem_id, user_id, title, description):
         query = "UPDATE todoitems SET title = ?, description = ? WHERE todoitemID = ? AND userID = ?"
-        pass
+        self.cursor.execute(query, (todoitem_id, user_id, title, description))
+        self.connection.commit()
+        return {"Successful": True, "Response": "Item Updated."}
 
 
-    def todo_toggleCompletion(self):
+    def todo_toggleCompletion(self, todoitem_id, user_id):
+        query = "SELECT completed FROM todoitems WHERE todoitemID = ? AND userID = ?"
+        self.cursor.execute(query, (todoitem_id, user_id))
+        row = self.cursor.fetchone()
+        if(row == None):
+            return {"Successful": False, "Response": "Item doesn't exist."}
+        completed = int(row[0])
         query = "UPDATE todoitems SET completed = ? WHERE todoitemID = ? AND userID = ?"
-        pass
+        self.cursor.execute(query, (1, todoitem_id, user_id)) if bool(completed) == False else self.cursor.execute(query, (0, todoitem_id, user_id)) 
+        self.connection.commit()
+        return {"Successful": True, "Response": "Item Updated."}
 
 
     def todo_deleteItem(self):

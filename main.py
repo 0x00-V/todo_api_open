@@ -6,7 +6,7 @@ from uuid import uuid4
 
 sqlite3Database = Database()
 sqlite3Database.createDatabase()
-
+sqlite3Database.todo_toggleCompletion(1, 1)
 app = FastAPI()
 
 
@@ -19,12 +19,16 @@ class UserLogin(BaseModel):
     EmailAddress : str
     Password : str
 
+class NewTodoItem(BaseModel):
+    Title : str
+    Description : str
+
 
 def Authorized(session_id: str = Cookie(default=None)):
     databaseResponse = sqlite3Database.checkSession(session_id)
     if databaseResponse["Successful"] == False:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return {"EmailAddress": databaseResponse["EmailAddress"], "Username": databaseResponse["Username"]}
+    return {"UserID": databaseResponse["UserID"], "EmailAddress": databaseResponse["EmailAddress"], "Username": databaseResponse["Username"]}
 
 def CheckSession(session_id):
     databaseResponse = sqlite3Database.checkSession(session_id)
@@ -74,6 +78,13 @@ def get_me(user=Depends(Authorized)):
         "EmailAddress": user["EmailAddress"],
         "Username": user["Username"]
     }
+
+
+@app.put("/create_item")
+def create_item(newItem: NewTodoItem, user=Depends(Authorized)):
+    newItemResponse = sqlite3Database.todo_createItem(user["UserID"], newItem.Title, newItem.Description)
+    if newItemResponse["Successful"] == True:
+       return newItemResponse 
 
 
 # TODO:
