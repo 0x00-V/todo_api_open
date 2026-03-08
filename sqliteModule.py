@@ -92,9 +92,17 @@ class Database:
             return {"Successful": False, "Response": "User session not valid."}
         
     #TODOITEMS: todoitemID, userID, completed, title, description, TimeCreated
-    def todo_listItems(self):
+#TODO
+    def todo_listItems(self, user_id):
         query = "SELECT * FROM todoitems WHERE userID = ?"
-        pass
+        self.cursor.execute(query, (user_id,))
+        rows = self.cursor.fetchall()
+        items = []
+        if(rows):
+            for row in rows:
+                items.append(row)
+        return [{"Successful": True}, items]
+
 
     def todo_createItem(self, user_id, title, description):
         query = "INSERT INTO todoitems(userID, title, description, TimeCreated) VALUES (?, ?, ?, ?)"
@@ -105,7 +113,7 @@ class Database:
 
     def todo_editItem(self, todoitem_id, user_id, title, description):
         query = "UPDATE todoitems SET title = ?, description = ? WHERE todoitemID = ? AND userID = ?"
-        self.cursor.execute(query, (todoitem_id, user_id, title, description))
+        self.cursor.execute(query, (title, description,todoitem_id, user_id))
         self.connection.commit()
         return {"Successful": True, "Response": "Item Updated."}
 
@@ -122,7 +130,6 @@ class Database:
         self.connection.commit()
         return {"Successful": True, "Response": "Item Updated."}
 
-
     def todo_deleteItem(self):
         query = "DELETE FROM todoitems WHERE todoitemID = ? AND userID = ?"
-        pass
+        # TODO

@@ -6,7 +6,6 @@ from uuid import uuid4
 
 sqlite3Database = Database()
 sqlite3Database.createDatabase()
-sqlite3Database.todo_toggleCompletion(1, 1)
 app = FastAPI()
 
 
@@ -19,9 +18,16 @@ class UserLogin(BaseModel):
     EmailAddress : str
     Password : str
 
-class NewTodoItem(BaseModel):
+class TodoItem(BaseModel):
     Title : str
     Description : str
+class TodoItemWithID(BaseModel):
+    TodoItemID : int
+    Title : str
+    Description : str
+
+class TodoItemIDOnly(BaseModel):
+    ItemID : int
 
 
 def Authorized(session_id: str = Cookie(default=None)):
@@ -81,12 +87,26 @@ def get_me(user=Depends(Authorized)):
 
 
 @app.put("/create_item")
-def create_item(newItem: NewTodoItem, user=Depends(Authorized)):
+def create_item(newItem: TodoItem, user=Depends(Authorized)):
     newItemResponse = sqlite3Database.todo_createItem(user["UserID"], newItem.Title, newItem.Description)
     if newItemResponse["Successful"] == True:
        return newItemResponse 
 
+@app.post("/get-items")
+def get_items(user=Depends(Authorized)):
+    usersItems = sqlite3Database.todo_listItems(user["UserID"])
+    return usersItems
 
+@app.post("/edit-item")
+def edit_item(todoItem: TodoItemWithID, user=Depends(Authorized)):
+    editItemResponse = sqlite3Database.todo_editItem(todoItem.TodoItemID, user["UserID"], todoItem.Title, todoItem.Description)
+    if editItemResponse["Successful"] == True:
+        return editItemResponse
+
+@app.post("/toggle-completion")
+def toggle_item_comletion(ItemID: int,user=Depends(Authorized)):
+    toggleResponse = sqlite3Database.todo_toggleCompletion(ItemID, user["UserID"])
+    return toggleResponse
 # TODO:
 """
 Description: This will be an API for a todolist application.
@@ -94,8 +114,13 @@ Description: This will be an API for a todolist application.
 Requirements:
 > Login & Registration [DONE]
 > Implement Database-stored sessions where the user can only have 10 sessions. If they reach 10, delete oldest one. [DONE]
-> TODOLIST CREATE []
-> TODOLIST READ (LIST) []
-> TODOLIST DELETE []
-> TODOLIST UPDATE []
+> TODOLIST CREATE [DONE]
+> TODOLIST READ (LIST) [DONE]
+> TODOLIST DELETE [DONE]
+> TODOLIST UPDATE [DONE]
+
+
+> Maybe do some err handling.
+I could improve todo logic and use userid as primary key and add a seperate id per user for items.
+
 """
