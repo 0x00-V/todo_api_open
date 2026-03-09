@@ -78,49 +78,53 @@ def login(user: UserLogin, response: Response, session_id: str = Cookie(default=
         raise HTTPException(status_code=401, detail=sessionCreationResponse["Response"])
 
 
-@app.get("/me")
-def get_me(user=Depends(Authorized)):
-    return {
-        "EmailAddress": user["EmailAddress"],
-        "Username": user["Username"]
-    }
-
-
-@app.put("/create_item")
+@app.put("/create-item")
 def create_item(newItem: TodoItem, user=Depends(Authorized)):
     newItemResponse = sqlite3Database.todo_createItem(user["UserID"], newItem.Title, newItem.Description)
-    if newItemResponse["Successful"] == True:
-       return newItemResponse 
+    return newItemResponse 
+
 
 @app.post("/get-items")
 def get_items(user=Depends(Authorized)):
     usersItems = sqlite3Database.todo_listItems(user["UserID"])
     return usersItems
 
+
 @app.post("/edit-item")
 def edit_item(todoItem: TodoItemWithID, user=Depends(Authorized)):
     editItemResponse = sqlite3Database.todo_editItem(todoItem.TodoItemID, user["UserID"], todoItem.Title, todoItem.Description)
-    if editItemResponse["Successful"] == True:
-        return editItemResponse
+    return editItemResponse
+
 
 @app.post("/toggle-completion")
-def toggle_item_comletion(ItemID: int,user=Depends(Authorized)):
+def toggle_item_completion(ItemID: int,user=Depends(Authorized)):
     toggleResponse = sqlite3Database.todo_toggleCompletion(ItemID, user["UserID"])
     return toggleResponse
+
+
+@app.post("/delete-item")
+def delete_item(ItemID: int, user=Depends(Authorized)):
+    deleteResponse = sqlite3Database.todo_deleteItem(ItemID, user["UserID"])
+    return deleteResponse
+
+
+@app.get("/me")
+def get_me(user=Depends(Authorized)):
+    return {
+        "EmailAddress": user["EmailAddress"],
+        "Username": user["Username"]
+    }
 # TODO:
 """
 Description: This will be an API for a todolist application.
 
 Requirements:
-> Login & Registration [DONE]
-> Implement Database-stored sessions where the user can only have 10 sessions. If they reach 10, delete oldest one. [DONE]
-> TODOLIST CREATE [DONE]
-> TODOLIST READ (LIST) [DONE]
-> TODOLIST DELETE [DONE]
-> TODOLIST UPDATE [DONE]
+BASIC AUTH - DONE
+CRUD - DONE
 
-
-> Maybe do some err handling.
-I could improve todo logic and use userid as primary key and add a seperate id per user for items.
+NEXT:
+Input validation
+Password Resets
+Proper error handling
 
 """
