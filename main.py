@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, Response, Cookie, Depends, HTTPException
 from pydantic import BaseModel
 from sqliteModule import Database
 from uuid import uuid4
-
+import re
 
 sqlite3Database = Database()
 sqlite3Database.createDatabase()
@@ -51,9 +51,13 @@ def register(user: UserRegister):
     for field, value in user.model_dump().items():
         if not value or value.strip() == "":
             return {f"Missing Required Field: {field}"}
-
-    databaseResponse = sqlite3Database.registerUser(user.EmailAddress, user.Password, user.Username, user.DisplayName)
-
+    email = re.fullmatch("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$", user.EmailAddress)
+    username = re.fullmatch("^[A-Za-z0-9_]{1,15}$", user.Username)
+    if bool(email) == False:
+        raise HTTPException(status_code=400, detail=[{"Response": "Invalid email format."}])
+    if bool(username) == False:
+        raise HTTPException(status_code=400, detail=[{"Response": "Invalid username format."}])
+    databaseResponse = sqlite3Database.registerUser(user.EmailAddress, user.Password, f"@{user.Username}", user.DisplayName)
     return databaseResponse
 
 
@@ -66,7 +70,6 @@ def login(user: UserLogin, response: Response, session_id: str = Cookie(default=
         if not value or value.strip() == "":
             return {f"Missing Required Field: {field}"}
     databaseResponse = sqlite3Database.userLogin(user.EmailAddress, user.Password)
-
     if databaseResponse["Successful"] == False:
         raise HTTPException(status_code=401, detail=databaseResponse["Response"])
     session_id = str(uuid4())
@@ -81,30 +84,40 @@ def login(user: UserLogin, response: Response, session_id: str = Cookie(default=
 @app.put("/create-item")
 def create_item(newItem: TodoItem, user=Depends(Authorized)):
     newItemResponse = sqlite3Database.todo_createItem(user["UserID"], newItem.Title, newItem.Description)
+    if newItemResponse["Successful"] == False:
+        raise HTTPException(status_code=400, detail=[newItemResponse["Response"]])
     return newItemResponse 
 
 
-@app.post("/get-items")
+@app.get("/get-items")
 def get_items(user=Depends(Authorized)):
     usersItems = sqlite3Database.todo_listItems(user["UserID"])
+    if usersItems["Successful"] == False:
+        raise HTTPException(status_code=400, detail=[usersItems["Response"]])
     return usersItems
 
 
 @app.post("/edit-item")
 def edit_item(todoItem: TodoItemWithID, user=Depends(Authorized)):
     editItemResponse = sqlite3Database.todo_editItem(todoItem.TodoItemID, user["UserID"], todoItem.Title, todoItem.Description)
+    if editItemResponse["Successful"] == False:
+        raise HTTPException(status_code=400, detail=[editItemResponse["Response"]])
     return editItemResponse
 
 
 @app.post("/toggle-completion")
 def toggle_item_completion(ItemID: int,user=Depends(Authorized)):
     toggleResponse = sqlite3Database.todo_toggleCompletion(ItemID, user["UserID"])
+    if toggleResponse["Successful"] == False:
+        raise HTTPException(status_code=400, detail=[toggleResponse["Response"]])
     return toggleResponse
 
 
 @app.post("/delete-item")
 def delete_item(ItemID: int, user=Depends(Authorized)):
     deleteResponse = sqlite3Database.todo_deleteItem(ItemID, user["UserID"])
+    if deleteResponse["Successful"] == False:
+        raise HTTPException(status_code=400, detail=[deleteResponse["Response"]])
     return deleteResponse
 
 
@@ -114,17 +127,3 @@ def get_me(user=Depends(Authorized)):
         "EmailAddress": user["EmailAddress"],
         "Username": user["Username"]
     }
-# TODO:
-"""
-Description: This will be an API for a todolist application.
-
-Requirements:
-BASIC AUTH - DONE
-CRUD - DONE
-
-NEXT:
-Input validation
-Password Resets
-Proper error handling
-
-"""

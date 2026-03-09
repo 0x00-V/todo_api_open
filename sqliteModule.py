@@ -94,10 +94,10 @@ class Database:
             items = []
             if(rows):
                 for row in rows:
-                    items.append(row)
+                    items.append(dict(row))
         except sqlite3.Error as err:
             return {"Successful": False, "Response": f"There was an error:\n{err}"}
-        return [{"Successful": True}, items]
+        return {"Successful": True, "data": items}
 
 
     def todo_createItem(self, user_id, title, description):
