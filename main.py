@@ -67,9 +67,9 @@ def register(user: UserRegister):
     email = re.fullmatch("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$", user.EmailAddress)
     username = re.fullmatch("^[A-Za-z0-9_]{1,15}$", user.Username)
     if bool(email) == False:
-        raise HTTPException(status_code=400, detail=[{"Response": "Invalid email format."}])
+        raise HTTPException(status_code=400, detail={"Response": "Invalid email format."})
     if bool(username) == False:
-        raise HTTPException(status_code=400, detail=[{"Response": "Invalid username format."}])
+        raise HTTPException(status_code=400, detail={"Response": "Invalid username format."})
     databaseResponse = sqlite3Database.registerUser(user.EmailAddress, user.Password, f"@{user.Username}", user.DisplayName)
     return databaseResponse
 
