@@ -9,7 +9,7 @@ class Database:
     
 
     def createDatabase(self):
-        query = "CREATE TABLE IF NOT EXISTS users (userID INTEGER PRIMARY KEY, EmailAddress TEXT NOT NULL UNIQUE, Password BLOB NOT NULL, Username TEXT NOT NULL UNIQUE, DisplayName TEXT NOT NULL )"
+        query = "CREATE TABLE IF NOT EXISTS users (userID INTEGER PRIMARY KEY, EmailAddress TEXT NOT NULL UNIQUE, Password BLOB NOT NULL, Username TEXT NOT NULL UNIQUE)"
         self.cursor.execute(query)
         self.connection.commit()
         query = "CREATE TABLE IF NOT EXISTS todoitems (todoitemID INTEGER PRIMARY KEY, completed BOOL DEFAULT 0, userID INTEGER, title TEXT NOT NULL, description TEXT, TimeCreated TIMESTAMP, FOREIGN KEY (userID) REFERENCES users(userID) ON DELETE CASCADE )"
@@ -22,7 +22,7 @@ class Database:
 
     def userLogin(self, email_address, password):
         try:
-            query = "SELECT userId, EmailAddress, Password, Username, DisplayName FROM users WHERE EmailAddress = ?"
+            query = "SELECT userId, EmailAddress, Password, Username FROM users WHERE EmailAddress = ?"
             self.cursor.execute(query, (email_address,))
             row = self.cursor.fetchone()
             if row != None:
@@ -36,7 +36,7 @@ class Database:
         except sqlite3.Error as err:
             return {"Successful": False, "Response": f"There was an error:\n{err}"}
 
-    def registerUser(self, email_address, password, username, display_name):
+    def registerUser(self, email_address, password, username):
         try:
             query = "SELECT emailAddress FROM users WHERE emailAddress = ?"
             self.cursor.execute(query, (email_address,))
@@ -49,8 +49,8 @@ class Database:
             if(row):
                 return {"Successful": False, "Response": "Username Taken."}
             hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-            query = "INSERT INTO users(EmailAddress, Password, Username, DisplayName) VALUES (?,?,?,?)"
-            self.cursor.execute(query, (email_address, hashed_password, username, display_name,))
+            query = "INSERT INTO users(EmailAddress, Password, Username) VALUES (?,?,?)"
+            self.cursor.execute(query, (email_address, hashed_password, username))
             self.connection.commit()
         except sqlite3.Error as err:
             return {"Successful": False, "Response": f"There was an error:\n{err}"}

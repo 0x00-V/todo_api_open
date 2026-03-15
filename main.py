@@ -26,7 +26,6 @@ class UserRegister(BaseModel):
     EmailAddress : str
     Password: str
     Username: str
-    DisplayName : str
 class UserLogin(BaseModel):
     EmailAddress : str
     Password : str
@@ -70,7 +69,7 @@ def register(user: UserRegister):
         raise HTTPException(status_code=400, detail={"Response": "Invalid email format."})
     if bool(username) == False:
         raise HTTPException(status_code=400, detail={"Response": "Invalid username format."})
-    databaseResponse = sqlite3Database.registerUser(user.EmailAddress, user.Password, f"@{user.Username}", user.DisplayName)
+    databaseResponse = sqlite3Database.registerUser(user.EmailAddress, user.Password, f"@{user.Username}")
     return databaseResponse
 
 
@@ -140,6 +139,7 @@ def logout(response: Response, session_id: str = Cookie(default=None),user=Depen
     if sessionDelResp["Successful"] == False:
         raise HTTPException(status_code=500, detail=[sessionDelResp["Response"]])
     return sessionDelResp
+
 
 @app.get("/me")
 def get_me(user=Depends(Authorized)):
