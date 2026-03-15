@@ -78,3 +78,12 @@ curl -X 'POST' \
   -H 'accept: application/json' \
   -d ''
 ```
+
+**LOGOUG** (/logout) (POST)
+```
+curl -X 'POST' \
+  'http://localhost:8000/logout' \
+  --cookie "session_id=abc123; \
+  -H 'accept: application/json' \
+  -d ''
+```
