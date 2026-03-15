@@ -59,7 +59,7 @@ class Database:
 
     def createSession(self, user_id, session, email_address, username):
         try:
-            query = "SELECT sessionId, TimeCreated FROM SESSIONS WHERE userId = ? ORDER BY TimeCreated ASC"
+            query = "SELECT sessionId, TimeCreated FROM SESSIONS WHERE userID = ? ORDER BY TimeCreated ASC"
             self.cursor.execute(query, (user_id,))
             rows = self.cursor.fetchall()
             if len(rows) >= 10:
@@ -71,6 +71,20 @@ class Database:
         except sqlite3.Error as err:
             return {"Successful": False, "Response": f"There was an error:\n{err}"}
         return {"Successful": True, "Response": "Session Created."}
+    
+    def deleteSession(self, user_id, session_id):
+        try:
+            query = "DELETE FROM sessions WHERE userID = ? AND session = ?"
+            self.cursor.execute(query, (user_id, session_id))
+            self.connection.commit()
+
+            if self.cursor.rowcount == 0:
+                return {"Successful": False, "Response": "Session doesn't exist"}
+
+        except sqlite3.Error as err:
+            return {"Successful": False, "Response": f"Database Error: {err}"}
+
+        return {"Successful": True, "Response": "Session Deleted."} 
     
     
     def checkSession(self, session_id):
