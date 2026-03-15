@@ -10,7 +10,6 @@ curl -X 'POST' \
   "EmailAddress": "example@example.com",
   "Password": "example",
   "Username": "example",
-  "DisplayName": "Example User"
 }'
 ```
 
