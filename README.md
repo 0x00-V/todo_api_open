@@ -78,7 +78,7 @@ curl -X 'POST' \
   -d ''
 ```
 
-**LOGOUG** (/logout) (POST)
+**LOGOUT** (/logout) (POST)
 ```
 curl -X 'POST' \
   'http://localhost:8000/logout' \
