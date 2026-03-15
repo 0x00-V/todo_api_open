@@ -133,6 +133,13 @@ def delete_item(ItemID: int, user=Depends(Authorized)):
         raise HTTPException(status_code=400, detail=[deleteResponse["Response"]])
     return deleteResponse
 
+@app.post("/logout")
+def logout(response: Response, session_id: str = Cookie(default=None),user=Depends(Authorized)):
+    sessionDelResp = sqlite3Database.deleteSession(user["UserID"], session_id)
+    response.delete_cookie(key="session_id")
+    if sessionDelResp["Successful"] == False:
+        raise HTTPException(status_code=500, detail=[sessionDelResp["Response"]])
+    return sessionDelResp
 
 @app.get("/me")
 def get_me(user=Depends(Authorized)):
