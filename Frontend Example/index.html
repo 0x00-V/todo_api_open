@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero's Todo</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            background: #121212;
+            color: #f2f2f2;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 40px auto;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e1e1e;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid #2a2a2a;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        button {
+            background: #ff3b3b;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #ff5555;
+        }
+
+        #logout {
+            background: #444;
+        }
+
+        #logout:hover {
+            background: #666;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1a1a1a;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        thead {
+            background: #242424;
+        }
+
+        th {
+            text-align: left;
+            padding: 14px;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 14px;
+            border-top: 1px solid #2a2a2a;
+        }
+
+        tr:hover {
+            background: #222;
+        }
+
+        input[type="checkbox"] {
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+
+        .display-no-items {
+            text-align: center;
+            padding: 40px;
+            color: #aaa;
+            font-size: 18px;
+        }
+
+        .create-task-active {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .create-task-disabled {
+            display: none;
+        }
+
+        .task-form {
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 420px;
+            border: 1px solid #2a2a2a;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        textarea {
+            background: #121212;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            color: white;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #ff3b3b;
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        #closebtn {
+            background: #444;
+        }
+
+        #closebtn:hover {
+            background: #666;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="navbar">
+            <div class="logo">Zero's Todolist</div>
+
+            <div class="nav-right">
+                <button id="new-item">New Item</button>
+                <span id="username"></span>
+                <button id="logout">Logout</button>
+            </div>
+        </div>
+
+        <div id="form-container" class="create-task-disabled">
+
+            <form class="task-form">
+
+                <div class="form-container">
+                    <label for="title">Title</label>
+                    <textarea id="title" name="Title"></textarea>
+                </div>
+
+                <div class="form-container">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="Description"></textarea>
+                </div>
+
+                <div class="form-buttons">
+                    <button type="submit">Create</button>
+                    <button type="button" id="closebtn">Close</button>
+                </div>
+
+            </form>
+
+        </div>
+
+        <table id="todolist" style="display:none;">
+
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Completed</th>
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody id="todo-body"></tbody>
+
+        </table>
+
+        <div class="display-no-items" id="noitms"></div>
+
+    </div>
+
+    <script>
+
+        var logoutBtn = document.getElementById("logout");
+        logoutBtn.addEventListener('click', async function () {
+            const response = await fetch('http://127.0.0.1:8000/logout', { method: 'POST', credentials: 'include' });
+            if (!response.ok) {
+                alert("There was an error logging you out!");
+                return;
+            }
+            alert('You have logged out!');
+            window.location.reload();
+        })
+
+        async function checkIfLoggedIn() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/me', { method: 'GET', credentials: 'include' });
+                if (!response.ok) {
+                    window.location.href = "/login.html";
+                    return false;
+                } else {
+                    const result = await response.json();
+                    document.getElementById("username").textContent = result.Username;
+                    return true;
+                }
+            } catch {
+                alert("Service Unavailable.");
+                return false;
+            }
+        }
+
+        async function retreiveUserData() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/get-items', { method: 'GET', credentials: 'include' });
+                if (response.ok) {
+
+                    const result = await response.json();
+                    const table = document.getElementById('todo-body')
+
+                    if (result.data.length < 1) {
+                        document.getElementById('todolist').style.display = 'none';
+                        const no_items = document.createElement('p');
+                        no_items.textContent = "No tasks.";
+                        document.getElementById("noitms").append(no_items);
+                        return;
+                    } else {
+                        document.getElementById('todolist').style.display = 'table';
+                    }
+
+                    for (let i = 0; i < result.data.length; i++) {
+
+                        const new_tr = document.createElement('tr');
+
+                        const title = document.createElement('td');
+                        title.textContent = result.data[i].title;
+
+                        const description = document.createElement('td');
+                        description.textContent = result.data[i].description;
+
+                        const completed = document.createElement('td');
+                        const completedCheckbox = document.createElement('input');
+                        completedCheckbox.type = 'checkbox';
+                        completedCheckbox.value = result.data[i].completed;
+
+                        if (result.data[i].completed === 1) {
+                            completedCheckbox.checked = true;
+                        }
+
+                        completedCheckbox.addEventListener('click', async function () {
+                            await fetch(`http://127.0.0.1:8000/toggle-completion?ItemID=${result.data[i].todoitemID}`, { method: 'POST', credentials: 'include' });
+                            table.replaceChildren();
+                            retreiveUserData();
+                        });
+
+                        completed.append(completedCheckbox);
+
+                        const deleteItem = document.createElement('td');
+                        const deleteItemButton = document.createElement('button');
+                        deleteItemButton.textContent = "Delete";
+
+                        deleteItemButton.addEventListener('click', async function () {
+
+                            const confirmed = confirm("Delete this task?");
+
+                            if (!confirmed) {
+                                return;
+                            }
+
+                            await fetch(`http://127.0.0.1:8000/delete-item?ItemID=${result.data[i].todoitemID}`, {
+                                method: 'POST',
+                                credentials: 'include'
+                            });
+
+                            const table = document.getElementById('todo-body');
+                            table.replaceChildren();
+                            retreiveUserData();
+
+                        });
+
+                        deleteItem.append(deleteItemButton);
+
+                        new_tr.append(title);
+                        new_tr.append(description);
+                        new_tr.append(completed);
+                        new_tr.append(deleteItem);
+
+                        table.append(new_tr);
+
+                    }
+
+                }
+            } catch { }
+        }
+
+        let FormContainer = document.getElementById("form-container");
+        document.getElementById("new-item").addEventListener('click', function () {
+            FormContainer.classList.remove('create-task-disabled')
+            FormContainer.classList.add('create-task-active')
+        })
+        document.getElementById("closebtn").addEventListener('click', function () {
+            FormContainer.classList.remove('create-task-active')
+            FormContainer.classList.add('create-task-disabled')
+        })
+        let taskForm = document.querySelector('.task-form');
+        taskForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(taskForm);
+            const jsonifiedData = Object.fromEntries(formData.entries());
+            try {
+                const response = await fetch('http://127.0.0.1:8000/create-item', {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(jsonifiedData)
+                })
+                result = await response.json();
+                if (!response.ok) {
+                    alert(result.detail);
+                    return;
+                }
+                alert('Item created');
+                const table = document.getElementById('todo-body');
+                table.replaceChildren();
+                retreiveUserData();
+                document.getElementById("title").value = "";
+                document.getElementById("description").value = "";
+            } catch (error) {
+                alert(error);
+            }
+        })
+        window.addEventListener("load", async () => {
+            let LoggedInResponse = await checkIfLoggedIn();
+            if (LoggedInResponse === true) {
+                retreiveUserData();
+            }
+        })
+    </script>
+</body>
+</html>
